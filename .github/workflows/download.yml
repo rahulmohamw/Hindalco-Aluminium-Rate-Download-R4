@@ -37,12 +37,25 @@ jobs:
         path: logs/
         retention-days: 30
     
+    - name: List downloaded files
+      run: |
+        echo "📁 Checking downloads directory:"
+        ls -la downloads/ || echo "❌ Downloads directory not found"
+        echo ""
+        echo "📁 Full directory structure:"
+        find downloads -type f 2>/dev/null || echo "❌ No files found in downloads"
+        echo ""
+        echo "📊 File details:"
+        find downloads -name "*.pdf" -exec ls -lh {} \; 2>/dev/null || echo "❌ No PDF files found"
+    
     - name: Upload downloaded files as artifacts
       uses: actions/upload-artifact@v4
-      if: success()
+      if: always()
       with:
-        name: downloaded-pdfs-${{ github.run_number }}
-        path: downloads/
+        name: hindalco-pdfs-${{ github.run_number }}
+        path: |
+          downloads/
+          logs/
         retention-days: 90
     
     - name: Show download summary
