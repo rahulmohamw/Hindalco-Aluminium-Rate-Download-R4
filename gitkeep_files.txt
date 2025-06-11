@@ -1,0 +1,7 @@
+# Create these empty files to maintain directory structure in git:
+
+# logs/.gitkeep
+# (empty file to keep logs directory in git)
+
+# downloads/.gitkeep  
+# (empty file to keep downloads directory in git)

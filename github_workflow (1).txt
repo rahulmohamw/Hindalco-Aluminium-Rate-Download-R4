@@ -1,0 +1,49 @@
+name: Daily Hindalco PDF Download
+
+on:
+  schedule:
+    # Runs at 4 PM UTC daily (adjust timezone as needed)
+    - cron: '0 16 * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run downloader
+      run: python run.py
+    
+    - name: Upload logs as artifact
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: download-logs
+        path: logs/
+        retention-days: 30
+    
+    - name: Commit and push downloaded files
+      if: success()
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add downloads/ logs/
+        git diff --staged --quiet || git commit -m "Auto-download: $(date +'%Y-%m-%d %H:%M:%S')"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
