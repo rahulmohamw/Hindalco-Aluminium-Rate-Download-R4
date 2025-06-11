@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '0 6 * * *'  # Runs every day at 6 AM UTC (11:30 AM IST)
 
+permissions:
+  contents: write
+
+
 jobs:
   download:
     runs-on: ubuntu-latest
