@@ -43,7 +43,19 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add downloads/ logs/
-        git diff --staged --quiet || git commit -m "Auto-download: $(date +'%Y-%m-%d %H:%M:%S')"
-        git push
+        if ! git diff --staged --quiet; then
+          git commit -m "Auto-download: $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
+        else
+          echo "No changes to commit"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload downloaded files as artifacts
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: downloaded-pdfs
+        path: downloads/
+        retention-days: 90
