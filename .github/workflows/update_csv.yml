@@ -29,6 +29,11 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add csv/*.csv
-          git commit -m "Updated CSVs from latest Hindalco PDF" || echo "No changes to commit"
-          git push
+          if ls csv/*.csv 1> /dev/null 2>&1; then
+            git add csv/*.csv
+            git commit -m "Updated CSVs from latest Hindalco PDF"
+            git push
+          else
+            echo "No CSVs to commit."
+          fi
+
