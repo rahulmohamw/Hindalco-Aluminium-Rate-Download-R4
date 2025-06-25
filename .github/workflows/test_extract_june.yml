@@ -3,6 +3,9 @@ name: Test Extract June
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   extract_june_csvs:
     runs-on: ubuntu-latest
@@ -68,3 +71,5 @@ jobs:
           else
             echo "No CSVs found to commit."
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
