@@ -46,7 +46,6 @@ class HindalcoPDFDownloader:
         return FILE_NAME_TEMPLATE.format(day=day, month=month, year=year)
 
     def create_directory_structure(self, date):
-        """Create directory structure Downloads/YYYY/Mon"""
         year = date.strftime("%Y")
         month = date.strftime("%b")
         dir_path = os.path.join("Downloads", year, month)
@@ -58,16 +57,24 @@ class HindalcoPDFDownloader:
             try:
                 logger.info(f"Attempting to download from: {url} (Attempt {attempt + 1}/{MAX_RETRIES})")
                 response = self.session.get(url, timeout=REQUEST_TIMEOUT, stream=True)
+                response.raw.decode_content = True  # allow streaming decompression
 
                 if response.status_code == 200:
                     content_type = response.headers.get('content-type', '').lower()
                     if 'pdf' not in content_type:
-                        logger.warning(f"Response doesn't appear to be a PDF. Content-Type: {content_type}")
+                        logger.warning(f"Invalid content type: {content_type} — not saving file.")
+                        return False
+
+                    # Peek first few bytes to check for %PDF- header
+                    first_bytes = response.raw.read(5)
+                    if first_bytes != b'%PDF-':
+                        logger.warning("File content does not start with '%PDF-', skipping save.")
+                        return False
 
                     with open(filepath, 'wb') as f:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
+                        f.write(first_bytes)
+                        for chunk in response.raw:
+                            f.write(chunk)
 
                     file_size = os.path.getsize(filepath)
                     logger.info(f"Successfully downloaded PDF: {filepath} ({file_size} bytes)")
@@ -119,7 +126,7 @@ class HindalcoPDFDownloader:
         if success:
             logger.info(f"Download completed successfully for {date.strftime('%Y-%m-%d')}")
         else:
-            logger.info(f"No PDF available for {date.strftime('%Y-%m-%d')}")
+            logger.info(f"No valid PDF available for {date.strftime('%Y-%m-%d')}")
 
         return success
 
@@ -131,7 +138,7 @@ def main():
     if success:
         logger.info("Download process completed successfully")
     else:
-        logger.info("No file downloaded (file may not be available for today)")
+        logger.info("No file downloaded (file may not be available or is invalid)")
 
     logger.info("Hindalco PDF Downloader finished")
 
