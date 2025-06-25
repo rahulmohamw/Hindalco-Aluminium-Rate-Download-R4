@@ -3,6 +3,9 @@ name: Test Extract June
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   extract_june_csvs:
     runs-on: ubuntu-latest
