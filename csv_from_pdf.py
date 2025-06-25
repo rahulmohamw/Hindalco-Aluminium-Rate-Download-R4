@@ -60,7 +60,9 @@ def process_pdf(pdf_path):
 if __name__ == "__main__":
     today = datetime.now()
     pdf_folder = os.path.join("Downloads", today.strftime("%Y"), today.strftime("%b"))
-    pdf_filename = f"primary-ready-reckoner-{today.strftime('%d-%b-%Y').lower()}.pdf"
+    
+    # Target Hindalco circular files with format: Hindalco_Circular_DD_Mon_YY.pdf
+    pdf_filename = f"Hindalco_Circular_{today.strftime('%d_%b_%y')}.pdf"
     pdf_path = os.path.join(pdf_folder, pdf_filename)
 
     print(f"🔍 Looking for: {pdf_path}")
@@ -69,4 +71,14 @@ if __name__ == "__main__":
         print(f"✅ Processed and updated CSVs from: {pdf_path}")
     else:
         print("❌ PDF not found. Skipping.")
+        
+        # Debug: List available files in the directory
+        if os.path.exists(pdf_folder):
+            print(f"📁 Files in {pdf_folder}:")
+            for file in os.listdir(pdf_folder):
+                if file.endswith('.pdf') and 'Hindalco_Circular' in file:
+                    print(f"   - {file}")
+        else:
+            print(f"📁 Directory {pdf_folder} does not exist")
+            
         exit(0)  # Graceful exit with no error
