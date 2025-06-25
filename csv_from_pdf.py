@@ -3,50 +3,10 @@ import csv
 from datetime import datetime
 from PyPDF2 import PdfReader
 
-from datetime import datetime
-import os
-
-# Set today's PDF folder based on date
-today = datetime.now()
-pdf_folder = os.path.join("Downloads", today.strftime("%Y"), today.strftime("%b"))
-pdf_filename = f"primary-ready-reckoner-{today.strftime('%d-%b-%Y').lower()}.pdf"
-pdf_path = os.path.join(pdf_folder, pdf_filename)
-
-print(f"Looking for: {pdf_path}")
-
-if os.path.exists(pdf_path):
-    process_pdf(pdf_path)
-    print(f"✅ Processed and updated CSVs from: {pdf_path}")
-else:
-    print("❌ PDF not found. Skipping.")
-
+CSV_DIR = "csv"
 
 def sanitize_filename(text):
     return text.replace("/", "-").replace("\"", "").replace(",", "").replace(":", "").replace(" ", "_")
-
-def extract_table_data(pdf_path):
-    reader = PdfReader(pdf_path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
-
-    lines = text.splitlines()
-
-    data_rows = []
-    current_date = extract_date_from_text(text)
-
-    for line in lines:
-        if line.strip().startswith("1.") or line.strip().startswith("2.") or line.strip().startswith("3."):
-            parts = line.strip().split()
-            # Try parsing last part as price
-            try:
-                price = int(parts[-1].replace(",", ""))
-                desc = " ".join(parts[1:-1])
-                data_rows.append((current_date, desc, price))
-            except:
-                continue
-
-    return data_rows
 
 def extract_date_from_text(text):
     import re
@@ -56,18 +16,37 @@ def extract_date_from_text(text):
         return date_obj.strftime("%Y-%m-%d")
     return datetime.now().strftime("%Y-%m-%d")
 
+def extract_table_data(pdf_path):
+    reader = PdfReader(pdf_path)
+    text = "\n".join([page.extract_text() for page in reader.pages])
+    lines = text.splitlines()
+
+    data_rows = []
+    current_date = extract_date_from_text(text)
+
+    for line in lines:
+        if line.strip()[:2] in {"1.", "2.", "3.", "4.", "5.", "6.", "7."}:
+            parts = line.strip().split()
+            try:
+                price = int(parts[-1].replace(",", ""))
+                desc = " ".join(parts[1:-1])
+                data_rows.append((current_date, desc, price))
+            except:
+                continue
+
+    return data_rows
+
 def append_to_csv(row):
     date, desc, price = row
     filename = sanitize_filename(desc) + ".csv"
     csv_path = os.path.join(CSV_DIR, filename)
-
     os.makedirs(CSV_DIR, exist_ok=True)
 
-    # Check for duplicates
+    # Skip if this date already exists
     if os.path.exists(csv_path):
         with open(csv_path, "r", newline="") as f:
             if any(date in line for line in f):
-                return  # already updated for this date
+                return
 
     with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
@@ -79,9 +58,15 @@ def process_pdf(pdf_path):
         append_to_csv(row)
 
 if __name__ == "__main__":
-    target_pdf = os.path.join(PDF_DIR, "primary-ready-reckoner-31-may-2025.pdf")
-    if os.path.exists(target_pdf):
-        process_pdf(target_pdf)
-        print(f"✅ Processed and updated CSVs from: {target_pdf}")
+    today = datetime.now()
+    pdf_folder = os.path.join("Downloads", today.strftime("%Y"), today.strftime("%b"))
+    pdf_filename = f"primary-ready-reckoner-{today.strftime('%d-%b-%Y').lower()}.pdf"
+    pdf_path = os.path.join(pdf_folder, pdf_filename)
+
+    print(f"🔍 Looking for: {pdf_path}")
+    if os.path.exists(pdf_path):
+        process_pdf(pdf_path)
+        print(f"✅ Processed and updated CSVs from: {pdf_path}")
     else:
-        print("❌ PDF not found.")
+        print("❌ PDF not found. Skipping.")
+        exit(0)  # Graceful exit with no error
