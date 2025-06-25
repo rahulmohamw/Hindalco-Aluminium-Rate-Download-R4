@@ -1,0 +1,51 @@
+name: Test Extract June CSVs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract_june_csvs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install PyPDF2
+
+      - name: Extract all June 2025 PDFs
+        run: |
+          python <<EOF
+          import os
+          from datetime import datetime
+          from csv_from_pdf import process_pdf
+
+          base_path = "Downloads/2025/Jun"
+          for day in range(1, 31):
+              try:
+                  date_obj = datetime.strptime(f"2025-06-{day:02}", "%Y-%m-%d")
+                  filename = f"primary-ready-reckoner-{date_obj.strftime('%d-%b-%Y').lower()}.pdf"
+                  path = os.path.join(base_path, filename)
+                  if os.path.exists(path):
+                      print(f"Processing {path}")
+                      process_pdf(path)
+              except Exception as e:
+                  print(f"Error processing {day}: {e}")
+          EOF
+
+      - name: Commit CSV Updates
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          if ls csv/*.csv 1> /dev/null 2>&1; then
+            git add csv/*.csv
+            git commit -m "Bulk update: Extracted CSVs from all valid June 2025 PDFs"
+            git push
+          else
+            echo "No CSVs found to commit."
