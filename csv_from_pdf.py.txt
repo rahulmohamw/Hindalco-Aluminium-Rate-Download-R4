@@ -3,9 +3,23 @@ import csv
 from datetime import datetime
 from PyPDF2 import PdfReader
 
+from datetime import datetime
+import os
+
+# Set today's PDF folder based on date
 today = datetime.now()
-PDF_DIR = os.path.join("Downloads", today.strftime("%Y"), today.strftime("%b"))
-CSV_DIR = "csv"
+pdf_folder = os.path.join("Downloads", today.strftime("%Y"), today.strftime("%b"))
+pdf_filename = f"primary-ready-reckoner-{today.strftime('%d-%b-%Y').lower()}.pdf"
+pdf_path = os.path.join(pdf_folder, pdf_filename)
+
+print(f"Looking for: {pdf_path}")
+
+if os.path.exists(pdf_path):
+    process_pdf(pdf_path)
+    print(f"✅ Processed and updated CSVs from: {pdf_path}")
+else:
+    print("❌ PDF not found. Skipping.")
+
 
 def sanitize_filename(text):
     return text.replace("/", "-").replace("\"", "").replace(",", "").replace(":", "").replace(" ", "_")
