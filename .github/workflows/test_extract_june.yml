@@ -1,13 +1,10 @@
-name: Test Extract June
-
+name: Test Extract July 2nd
 on:
   workflow_dispatch:
-
 permissions:
   contents: write
-
 jobs:
-  extract_june_csvs:
+  extract_july_2nd_csv:
     runs-on: ubuntu-latest
     
     steps:
@@ -21,42 +18,95 @@ jobs:
           
       - name: Install Dependencies
         run: |
-          pip install PyPDF2
+          pip install PyPDF2 requests
           
-      - name: Extract all June 2025 PDFs
+      - name: Download and Extract July 2nd 2025 PDF
         run: |
           python3 - <<'EOF'
           import os
+          import requests
           from datetime import datetime
           from csv_from_pdf import process_pdf
           
-          base_path = "Downloads/2025/Jun"
+          # Create directory structure
+          base_path = "Downloads/2025/Jul"
+          os.makedirs(base_path, exist_ok=True)
           
-          for day in range(1, 31):
-              try:
-                  date_obj = datetime.strptime(f"2025-06-{day:02d}", "%Y-%m-%d")
+          # Date for July 2nd, 2025
+          date_obj = datetime.strptime("2025-07-02", "%Y-%m-%d")
+          
+          # Construct URL and filename
+          day = date_obj.strftime("%d")
+          month = date_obj.strftime("%B").lower()
+          year = date_obj.strftime("%Y")
+          url = f"https://www.hindalco.com/Upload/PDF/primary-ready-reckoner-{day}-{month}-{year}.pdf"
+          
+          filename = f"primary-ready-reckoner-{day}-{month}-{year}.pdf"
+          filepath = os.path.join(base_path, filename)
+          
+          print(f"📥 Downloading from: {url}")
+          print(f"💾 Saving to: {filepath}")
+          
+          try:
+              # Download the PDF
+              response = requests.get(url, timeout=30)
+              response.raise_for_status()
+              
+              # Check if it's actually a PDF
+              if response.headers.get('content-type', '').lower().find('pdf') == -1:
+                  print("⚠️ Warning: Content type is not PDF")
+              
+              # Save the file
+              with open(filepath, 'wb') as f:
+                  f.write(response.content)
+              
+              file_size = len(response.content)
+              print(f"✅ Successfully downloaded PDF: {filepath} ({file_size} bytes)")
+              
+              # Process the PDF to extract CSV
+              if os.path.exists(filepath):
+                  print(f"🔄 Processing PDF to extract CSV...")
+                  process_pdf(filepath)
+                  print(f"✅ CSV extraction completed for July 2nd, 2025")
+              else:
+                  print(f"❌ PDF file not found after download")
                   
-                  # Try multiple filename patterns
-                  patterns = [
-                      f"primary-ready-reckoner-{date_obj.strftime('%d-%B-%Y').lower()}.pdf",
-                      f"primary-ready-reckoner-{date_obj.strftime('%d-%b-%y').lower()}.pdf",
-                      f"Hindalco_Circular_{day}_Jun_25.pdf"
-                  ]
+          except requests.exceptions.RequestException as e:
+              print(f"❌ Download failed: {e}")
+              
+              # Try alternative filename patterns if main download fails
+              alternative_patterns = [
+                  f"primary-ready-reckoner-2-{month}-{year}.pdf",  # Without zero padding
+                  f"primary-ready-reckoner-{date_obj.strftime('%d-%b-%y').lower()}.pdf",
+                  f"Hindalco_Circular_2_Jul_25.pdf"
+              ]
+              
+              print(f"🔄 Trying alternative patterns...")
+              for pattern in alternative_patterns:
+                  alt_url = f"https://www.hindalco.com/Upload/PDF/{pattern}"
+                  alt_filepath = os.path.join(base_path, pattern)
                   
-                  found = False
-                  for pattern in patterns:
-                      path = os.path.join(base_path, pattern)
-                      if os.path.exists(path):
-                          print(f"✅ Processing {path}")
-                          process_pdf(path)
-                          found = True
-                          break
-                  
-                  if not found:
-                      print(f"❌ No file found for day {day} (tried {len(patterns)} patterns)")
+                  try:
+                      print(f"📥 Trying: {alt_url}")
+                      alt_response = requests.get(alt_url, timeout=30)
+                      alt_response.raise_for_status()
                       
-              except Exception as e:
-                  print(f"⚠️ Error on day {day}: {e}")
+                      with open(alt_filepath, 'wb') as f:
+                          f.write(alt_response.content)
+                      
+                      print(f"✅ Successfully downloaded: {alt_filepath}")
+                      process_pdf(alt_filepath)
+                      print(f"✅ CSV extraction completed")
+                      break
+                      
+                  except requests.exceptions.RequestException:
+                      print(f"❌ Failed: {alt_url}")
+                      continue
+              else:
+                  print("❌ All download attempts failed")
+                  
+          except Exception as e:
+              print(f"⚠️ Unexpected error: {e}")
           EOF
           
       - name: Commit CSV Updates
@@ -66,7 +116,8 @@ jobs:
           
           if ls csv/*.csv 1> /dev/null 2>&1; then
             git add csv/*.csv
-            git commit -m "Bulk update: Extracted CSVs from all valid June 2025 PDFs"
+            git add Downloads/2025/Jul/*.pdf
+            git commit -m "Extract CSV from July 2nd, 2025 PDF"
             git push
           else
             echo "No CSVs found to commit."
