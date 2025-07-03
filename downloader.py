@@ -26,7 +26,7 @@ class HindalcoPDFDownloader:
         })
 
     def format_date_for_url(self, date):
-        day = date.strftime("%d").lstrip('0')
+        day = date.strftime("%d")
         month = date.strftime("%B").lower()
         year = date.strftime("%Y")
         return day, month, year
