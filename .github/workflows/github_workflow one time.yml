@@ -35,7 +35,7 @@ jobs:
         
     - name: Run PDF to CSV conversion
       run: |
-        python csv_manager.py workflow
+        python csv_manager_enhanced.py workflow
         
     - name: Check for changes
       id: check_changes
