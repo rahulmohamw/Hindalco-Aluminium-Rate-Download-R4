@@ -1,4 +1,4 @@
-name: PDF to CSV Conversion Workflow
+name: PDF to CSV Conversion Workflow one time
 
 on:
   push:
