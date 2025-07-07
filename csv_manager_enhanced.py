@@ -20,14 +20,14 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.11'
         
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pandas pdfplumber openpyxl
+        pip install pandas pdfplumber openpyxl pathlib2
         
     - name: Create necessary directories
       run: |
